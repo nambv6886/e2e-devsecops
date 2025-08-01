@@ -34,8 +34,7 @@ variable "public_subnets" {
   type        = list(string)
 }
 
-variable "linux2_ami" {
-  description = "The AMI ID for the Linux 2 instance"
+variable "ubuntu_id" {
+  description = "The AMI ID for the Ubuntu instance"
   type        = string
-
 }

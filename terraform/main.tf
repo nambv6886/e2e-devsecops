@@ -14,7 +14,7 @@ module "vpc" {
   azs             = var.azs
 }
 
-module "jenkins_sg" {
+module "jenkins" {
   source = "./modules/jenkins"
 
   project_name = var.project_name
@@ -23,7 +23,7 @@ module "jenkins_sg" {
   vpc_id         = module.vpc.vpc_id
   public_subnets = module.vpc.public_subnets
 
-  linux2_ami                = module.data.amzlinux2_id
+  ubuntu_id                 = module.data.ubuntu_id
   jenkins_instance_type     = var.jenkins_instance_type
   jenkins_instance_key_name = var.jenkins_instance_key_name
 
