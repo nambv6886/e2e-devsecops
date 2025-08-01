@@ -1,3 +1,7 @@
+module "data" {
+  source = "./modules/data"
+}
+
 module "vpc" {
   source = "./modules/vpc"
 
@@ -8,4 +12,19 @@ module "vpc" {
   public_subnets  = var.public_subnets
   aws_region      = var.aws_region
   azs             = var.azs
+}
+
+module "jenkins_sg" {
+  source = "./modules/jenkins"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  vpc_id         = module.vpc.vpc_id
+  public_subnets = module.vpc.public_subnets
+
+  linux2_ami                = module.data.amzlinux2_id
+  jenkins_instance_type     = var.jenkins_instance_type
+  jenkins_instance_key_name = var.jenkins_instance_key_name
+
 }

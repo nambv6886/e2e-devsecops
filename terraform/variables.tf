@@ -34,3 +34,14 @@ variable "azs" {
   type        = list(string)
   default     = ["ap-southeast-1a", "ap-southeast-1b"]
 }
+
+variable "jenkins_instance_type" {
+  description = "The instance type for the Jenkins server"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "jenkins_instance_key_name" {
+  description = "The key name for the Jenkins instance"
+  type        = string
+}
