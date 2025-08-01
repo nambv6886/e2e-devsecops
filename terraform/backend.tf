@@ -10,7 +10,7 @@ terraform {
 
   backend "s3" {
     bucket       = "nambv-e2e-app"
-    key          = "dev/vpc/state"
+    key          = "dev/e2e-app/state"
     region       = "ap-southeast-1"
     use_lockfile = true
   }
