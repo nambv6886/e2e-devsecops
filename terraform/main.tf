@@ -26,5 +26,4 @@ module "jenkins" {
   ubuntu_id                 = module.data.ubuntu_id
   jenkins_instance_type     = var.jenkins_instance_type
   jenkins_instance_key_name = var.jenkins_instance_key_name
-
 }
