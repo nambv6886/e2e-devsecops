@@ -5,13 +5,14 @@ module "data" {
 module "vpc" {
   source = "./modules/vpc"
 
-  project_name    = var.project_name
-  environment     = var.environment
-  vpc_cidr_block  = var.vpc_cidr_block
-  private_subnets = var.private_subnets
-  public_subnets  = var.public_subnets
-  aws_region      = var.aws_region
-  azs             = var.azs
+  project_name     = var.project_name
+  environment      = var.environment
+  vpc_cidr_block   = var.vpc_cidr_block
+  private_subnets  = var.private_subnets
+  public_subnets   = var.public_subnets
+  aws_region       = var.aws_region
+  azs              = var.azs
+  eks_cluster_name = var.eks_cluster_name
 }
 
 module "eks" {
@@ -32,6 +33,7 @@ module "eks" {
   private_subnet_ids = module.vpc.private_subnets
 }
 
+// Uncomment the following block to enable Jenkins module
 # module "jenkins" {
 #   source = "./modules/jenkins"
 

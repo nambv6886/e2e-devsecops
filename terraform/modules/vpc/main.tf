@@ -24,13 +24,17 @@ module "vpc" {
 
   # Tags for public subnets
   public_subnet_tags = {
-    Name = "${var.project_name}-public-subnet"
-    Type = "Public"
+    Name                                            = "${var.project_name}-public-subnet"
+    Type                                            = "Public"
+    "kubernetes.io/role/elb"                        = 1
+    "kubernetes.io/cluster/${var.eks_cluster_name}" = "shared" # Add for EKS discovery
   }
 
   # Tags for private subnets
   private_subnet_tags = {
-    Name = "${var.project_name}-private-subnet"
-    Type = "Private"
+    Name                                            = "${var.project_name}-private-subnet"
+    Type                                            = "Private"
+    "kubernetes.io/role/internal-elb"               = 1
+    "kubernetes.io/cluster/${var.eks_cluster_name}" = "shared"
   }
 }
