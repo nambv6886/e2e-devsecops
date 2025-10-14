@@ -33,17 +33,51 @@ module "eks" {
   private_subnet_ids = module.vpc.private_subnets
 }
 
-// Uncomment the following block to enable Jenkins module
-# module "jenkins" {
-#   source = "./modules/jenkins"
+module "rds" {
+  source = "./modules/rds"
 
-#   project_name = var.project_name
-#   environment  = var.environment
+  project_name       = var.project_name
+  environment        = var.environment
+  vpc_id             = module.vpc.vpc_id
+  vpc_cidr_block     = var.vpc_cidr_block
+  private_subnet_ids = module.vpc.private_subnets
 
-#   vpc_id         = module.vpc.vpc_id
-#   public_subnets = module.vpc.public_subnets
+  engine_version          = var.rds_engine_version
+  instance_class          = var.rds_instance_class
+  allocated_storage       = var.rds_allocated_storage
+  max_allocated_storage   = var.rds_max_allocated_storage
+  storage_type            = var.rds_storage_type
+  storage_encrypted       = var.rds_storage_encrypted
+  database_name           = var.rds_database_name
+  master_username         = var.rds_master_username
+  master_password         = var.rds_master_password
+  multi_az                = var.rds_multi_az
+  backup_retention_period = var.rds_backup_retention_period
+  backup_window           = var.rds_backup_window
+  maintenance_window      = var.rds_maintenance_window
+  skip_final_snapshot     = var.rds_skip_final_snapshot
+}
 
-#   ubuntu_id                 = module.data.ubuntu_id
-#   jenkins_instance_type     = var.jenkins_instance_type
-#   jenkins_instance_key_name = var.jenkins_instance_key_name
-# }
+module "redis" {
+  source = "./modules/redis"
+
+  project_name       = var.project_name
+  environment        = var.environment
+  vpc_id             = module.vpc.vpc_id
+  vpc_cidr_block     = var.vpc_cidr_block
+  private_subnet_ids = module.vpc.private_subnets
+
+  engine_version             = var.redis_engine_version
+  redis_family_version       = var.redis_family_version
+  node_type                  = var.redis_node_type
+  num_cache_nodes            = var.redis_num_cache_nodes
+  automatic_failover_enabled = var.redis_automatic_failover_enabled
+  multi_az_enabled           = var.redis_multi_az_enabled
+  at_rest_encryption_enabled = var.redis_at_rest_encryption_enabled
+  transit_encryption_enabled = var.redis_transit_encryption_enabled
+  auth_token_enabled         = var.redis_auth_token_enabled
+  auth_token                 = var.redis_auth_token
+  snapshot_retention_limit   = var.redis_snapshot_retention_limit
+  snapshot_window            = var.redis_snapshot_window
+  maintenance_window         = var.redis_maintenance_window
+}

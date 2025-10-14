@@ -2,6 +2,8 @@
 .terraform/
 .pem
 
+envs/
+
 # .tfstate files
 *.tfstate
 *.tfstate.*

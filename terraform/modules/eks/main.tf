@@ -57,7 +57,7 @@ module "eks" {
       instance_type = var.eks_node_instance_type
       key_name      = var.key_name
       ami_type      = var.eks_node_ami_type
-      capacity_type = "SPOT"
+      capacity_type = "ON_DEMAND"
 
       // rolling update configuration
       update_config = { max_unavailable_percentage = 33 }
