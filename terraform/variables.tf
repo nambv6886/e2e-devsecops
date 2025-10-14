@@ -250,3 +250,21 @@ variable "redis_maintenance_window" {
   type        = string
   default     = "sun:05:00-sun:07:00"
 }
+
+# Bastion Host Variables
+variable "bastion_key_name" {
+  description = "SSH key pair name for bastion host"
+  type        = string
+}
+
+variable "bastion_allowed_cidrs" {
+  description = "List of CIDR blocks allowed to SSH to bastion"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "bastion_instance_type" {
+  description = "EC2 instance type for bastion host"
+  type        = string
+  default     = "t3.micro"
+}

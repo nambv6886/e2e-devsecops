@@ -67,3 +67,20 @@ output "redis_configuration_endpoint" {
   value       = module.redis.redis_configuration_endpoint
 }
 
+# Bastion Host Outputs
+output "bastion_public_ip" {
+  description = "Public IP of the bastion host"
+  value       = module.bastion.bastion_public_ip
+}
+
+output "bastion_instance_id" {
+  description = "Instance ID of the bastion host"
+  value       = module.bastion.bastion_instance_id
+}
+
+output "bastion_ssh_command" {
+  description = "SSH command to connect to bastion"
+  value       = module.bastion.bastion_ssh_command
+}
+
+

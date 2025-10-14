@@ -81,3 +81,15 @@ module "redis" {
   snapshot_window            = var.redis_snapshot_window
   maintenance_window         = var.redis_maintenance_window
 }
+
+module "bastion" {
+  source = "./modules/bastion"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  vpc_id              = module.vpc.vpc_id
+  public_subnet_id    = module.vpc.public_subnets[0]
+  key_name            = var.bastion_key_name
+  allowed_cidr_blocks = var.bastion_allowed_cidrs
+  instance_type       = var.bastion_instance_type
+}

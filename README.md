@@ -10,6 +10,7 @@ This project provisions a complete, production-ready infrastructure on AWS inclu
 - **EKS**: Elastic Kubernetes Service cluster with managed node groups
 - **RDS MySQL**: Managed relational database with encryption and automated backups
 - **Redis**: ElastiCache Redis cluster for caching and session management
+- **Bastion Host**: Secure jump box for accessing private resources
 - **Security**: Private subnets, security groups, IAM roles, and encryption
 
 ## 📋 Table of Contents
@@ -66,6 +67,10 @@ This project provisions a complete, production-ready infrastructure on AWS inclu
 - ✅ Private subnet deployment
 - ✅ Security group with VPC-only access
 - ✅ Optional encryption in transit
+
+### Bastion Host
+
+- ✅ Amazon Linux 2023 with auto-updates
 
 ### Security
 
@@ -257,6 +262,15 @@ eks_node_min_capacity     = 1
 eks_node_max_capacity     = 3
 ```
 
+#### Bastion Configuration
+
+```hcl
+bastion_key_name      = "terraform"
+bastion_allowed_cidrs = ["203.0.113.10/32"]  # Your IP only
+bastion_instance_type = "t3.micro"
+bastion_enable_eip    = true
+```
+
 #### RDS Configuration
 
 ```hcl
@@ -357,9 +371,10 @@ terraform output redis_primary_endpoint
 | EC2 Worker Nodes  | t3.medium      | 1        | $30             |
 | RDS MySQL         | db.t3.micro    | 1        | $15             |
 | Redis             | cache.t3.micro | 2 nodes  | $20             |
+| Bastion Host      | t3.micro       | 1        | $7              |
 | NAT Gateway       | -              | 2        | $64             |
 | Data Transfer     | -              | ~100GB   | $9              |
-| **Total**         |                |          | **~$211/month** |
+| **Total**         |                |          | **~$218/month** |
 
 ### Production Environment (~$15/day)
 
@@ -369,9 +384,10 @@ terraform output redis_primary_endpoint
 | EC2 Worker Nodes   | t3.large       | 3        | $180            |
 | RDS MySQL Multi-AZ | db.t3.small    | 1        | $60             |
 | Redis Multi-AZ     | cache.t3.small | 3 nodes  | $75             |
+| Bastion Host       | t3.small       | 1        | $15             |
 | NAT Gateway        | -              | 2        | $64             |
 | Data Transfer      | -              | ~500GB   | $45             |
-| **Total**          |                |          | **~$497/month** |
+| **Total**          |                |          | **~$512/month** |
 
 💡 **Cost Saving Tips**:
 
