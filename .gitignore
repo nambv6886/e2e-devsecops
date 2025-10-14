@@ -2,7 +2,7 @@
 .terraform/
 .pem
 
-envs/
+terraform/envs/
 
 # .tfstate files
 *.tfstate
