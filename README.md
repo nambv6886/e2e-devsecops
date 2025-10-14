@@ -13,6 +13,90 @@ This project provisions a complete, production-ready infrastructure on AWS inclu
 - **Bastion Host**: Secure jump box for accessing private resources
 - **Security**: Private subnets, security groups, IAM roles, and encryption
 
+### Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph "Internet"
+        User[👤 Developer]
+    end
+
+    subgraph "AWS VPC (10.0.0.0/16)"
+        subgraph "Public Subnets (10.0.1.0/24, 10.0.2.0/24)"
+            IGW[🌐 Internet Gateway]
+            NAT1[🔀 NAT Gateway AZ-1a]
+            NAT2[🔀 NAT Gateway AZ-1b]
+            Bastion[🖥️ Bastion Host<br/>t3.micro]
+        end
+
+        subgraph "Private Subnets (10.0.4.0/24, 10.0.5.0/24)"
+            subgraph "EKS Cluster"
+                EKS[☸️ EKS Control Plane<br/>1.31]
+                Node1[🖥️ Worker Node 1<br/>t3.medium]
+                Node2[🖥️ Worker Node 2<br/>t3.medium]
+            end
+
+            subgraph "Data Layer"
+                RDS[🗄️ RDS MySQL<br/>db.t3.micro<br/>Encrypted]
+                Redis[⚡ Redis<br/>cache.t3.micro<br/>Encrypted]
+            end
+        end
+    end
+
+    subgraph "AWS Services"
+        ALB[⚖️ Application Load Balancer]
+        CloudWatch[📊 CloudWatch Logs]
+        Secrets[🔐 Secrets Manager]
+    end
+
+    %% Connections
+    User -->|SSH| Bastion
+    User -->|kubectl| EKS
+    Bastion -->|Access| Node1
+    Bastion -->|Access| Node2
+    Bastion -->|Connect| RDS
+    Bastion -->|Connect| Redis
+
+    Node1 -->|Query| RDS
+    Node2 -->|Query| RDS
+    Node1 -->|Cache| Redis
+    Node2 -->|Cache| Redis
+
+    EKS --> ALB
+    ALB --> Node1
+    ALB --> Node2
+
+    Node1 -->|Logs| CloudWatch
+    Node2 -->|Logs| CloudWatch
+    RDS -->|Logs| CloudWatch
+    Redis -->|Logs| CloudWatch
+
+    RDS -->|Secrets| Secrets
+    Redis -->|Secrets| Secrets
+
+    %% Styling
+    classDef public fill:#e1f5fe
+    classDef private fill:#f3e5f5
+    classDef data fill:#e8f5e8
+    classDef aws fill:#fff3e0
+
+    class IGW,NAT1,NAT2,Bastion public
+    class EKS,Node1,Node2 private
+    class RDS,Redis data
+    class ALB,CloudWatch,Secrets aws
+```
+
+### Component Overview
+
+| Component            | Purpose                               | Location        | Access                 |
+| -------------------- | ------------------------------------- | --------------- | ---------------------- |
+| **Bastion Host**     | Secure access to private resources    | Public Subnet   | SSH from Internet      |
+| **EKS Cluster**      | Kubernetes workloads                  | Private Subnets | Via Bastion or kubectl |
+| **RDS MySQL**        | Application database                  | Private Subnet  | Via Bastion or EKS     |
+| **Redis**            | Caching layer                         | Private Subnet  | Via Bastion or EKS     |
+| **NAT Gateway**      | Internet access for private resources | Public Subnet   | Automatic              |
+| **Internet Gateway** | Internet connectivity                 | VPC             | Automatic              |
+
 ## 📋 Table of Contents
 
 - [Features](#-features)
