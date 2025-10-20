@@ -1,6 +1,6 @@
 # 🚀 E2E DevSecOps Project - Location-Based Service
 
-> End-to-end DevSecOps implementation: từ Infrastructure as Code (Terraform) đến Kubernetes Deployment và NestJS Application.
+> End-to-end DevSecOps implementation: From Infrastructure as Code (Terraform) to Kubernetes Deployment and NestJS Application.
 
 ## 📖 Table of Contents
 
@@ -17,8 +17,6 @@
 ---
 
 ## 🎯 Overview
-
-Project này là một ví dụ hoàn chỉnh về DevSecOps pipeline, bao gồm:
 
 - **Infrastructure Layer**: AWS infrastructure provisioning với Terraform
 - **Orchestration Layer**: Kubernetes deployment với best practices
