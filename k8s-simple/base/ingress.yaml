@@ -1,0 +1,343 @@
+# =============================================================================
+# INGRESS - HTTP(S) routing from outside to services inside cluster
+# =============================================================================
+# Ingress exposes HTTP and HTTPS routes from outside the cluster to services within
+# One Ingress can route to multiple services based on host and path
+# 
+# This manifest uses AWS Application Load Balancer (ALB) Ingress Controller
+# ALB is a managed AWS service that provides Layer 7 load balancing
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # Name of the Ingress resource
+  name: lbs-ingress
+  namespace: lbs-dev
+  labels:
+    app: location-based-service
+  
+  # annotations: Additional configuration for AWS ALB Ingress Controller
+  annotations:
+    # =========================================================================
+    # AWS ALB INGRESS CONTROLLER ANNOTATIONS
+    # =========================================================================
+    
+    # Specifies the Ingress Controller class to use (AWS ALB)
+    kubernetes.io/ingress.class: alb
+    
+    # Scheme: internet-facing (public) or internal (private)
+    # internet-facing: ALB accessible from internet
+    # internal: ALB only accessible within VPC
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    
+    # Target type: ip or instance
+    # ip: Route traffic directly to pod IPs (recommended for EKS)
+    # instance: Route traffic to EC2 instance IPs
+    alb.ingress.kubernetes.io/target-type: ip
+    
+    # Health check path
+    # ALB will use this path to check backend health
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    
+    # Health check port
+    # traffic-port: Use the same port as traffic
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    
+    # Health check protocol: HTTP or HTTPS
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    
+    # Health check interval in seconds (5-300)
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    
+    # Health check timeout in seconds (2-120)
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    
+    # Healthy threshold count (2-10)
+    # Number of consecutive successful health checks required
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    
+    # Unhealthy threshold count (2-10)
+    # Number of consecutive failed health checks required
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+    
+    # Success codes for health checks
+    # HTTP status codes that indicate healthy target
+    alb.ingress.kubernetes.io/success-codes: "200"
+    
+    # Listen ports: HTTP and/or HTTPS
+    # Format: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    # Development: HTTP only
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    
+    # SSL redirect: Redirect HTTP to HTTPS
+    # Development: false (no SSL)
+    # Production: true (enforce HTTPS)
+    # alb.ingress.kubernetes.io/ssl-redirect: "443"
+    
+    # Backend protocol: HTTP or HTTPS
+    # Protocol used to communicate with backend pods
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    
+    # Target group attributes
+    # deregistration_delay: Time to wait before deregistering target (0-3600)
+    # Useful for graceful shutdown
+    alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=30
+    
+    # Load balancing algorithm
+    # round_robin: Distribute requests evenly (default)
+    # least_outstanding_requests: Route to target with fewest pending requests
+    alb.ingress.kubernetes.io/load-balancing-algorithm: round_robin
+    
+    # Tags for ALB
+    # AWS tags for cost tracking and organization
+    alb.ingress.kubernetes.io/tags: Environment=development,Application=location-based-service,ManagedBy=kubernetes
+    
+    # Security groups for ALB
+    # Comma-separated list of security group IDs
+    # If not specified, controller will create default security groups
+    # alb.ingress.kubernetes.io/security-groups: sg-xxxxxxxxx,sg-yyyyyyyyy
+    
+    # Subnets for ALB
+    # Comma-separated list of subnet IDs or tags
+    # ALB will be created in these subnets (must be public for internet-facing)
+    # alb.ingress.kubernetes.io/subnets: subnet-xxxxxxxxx,subnet-yyyyyyyyy
+    
+    # WAF ACL ARN (Web Application Firewall)
+    # Attach AWS WAF to protect against common web exploits
+    # alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:region:account:global/webacl/name/id
+    
+    # Shield Advanced protection
+    # Enable AWS Shield Advanced for DDoS protection
+    # alb.ingress.kubernetes.io/shield-advanced-protection: "true"
+    
+    # IP address type: ipv4 or dualstack (ipv4 + ipv6)
+    alb.ingress.kubernetes.io/ip-address-type: ipv4
+    
+    # Actions: Custom actions for ALB
+    # Can be used for authentication, redirects, fixed responses, etc.
+    # alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": {"Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+
+spec:
+  # ingressClassName: Ingress Controller class name
+  # alb: AWS Application Load Balancer Ingress Controller
+  ingressClassName: alb
+  
+  # rules: List of routing rules
+  rules:
+  # Rule 1: Route based on hostname
+  - host: api.lbs-dev.local
+    # http: HTTP routing rules
+    http:
+      # paths: List of path patterns
+      paths:
+      # Path 1: Route all requests (/) to service
+      - path: /
+        # pathType: Type of path matching
+        # Prefix: Match path prefix
+        #   Example: / matches all (/users, /api, /health, etc.)
+        #   Example: /api matches /api/users, /api/posts, etc.
+        # Exact: Exact path match
+        #   Example: /api only matches /api, not /api/users
+        # ImplementationSpecific: Depends on Ingress Controller
+        pathType: Prefix
+        
+        # backend: Service that will receive traffic
+        backend:
+          # service: Service in the same namespace
+          service:
+            # name: Service name (must match service.yaml)
+            name: lbs-service
+            # port: Service port
+            port:
+              # number: Port number (80 in service.yaml)
+              number: 80
+
+  # Optional: Rule 2 - Route with different paths
+  # - host: api.lbs-dev.local
+  #   http:
+  #     paths:
+  #     # API endpoints
+  #     - path: /api
+  #       pathType: Prefix
+  #       backend:
+  #         service:
+  #           name: lbs-service
+  #           port:
+  #             number: 80
+  #     
+  #     # Health check endpoint (can route to different service)
+  #     - path: /health
+  #       pathType: Exact
+  #       backend:
+  #         service:
+  #           name: lbs-service
+  #           port:
+  #             number: 80
+
+  # tls: HTTPS/TLS configuration (optional, for production)
+  # Uncomment when SSL certificate is available
+  # ALB will automatically provision certificate from ACM (AWS Certificate Manager)
+  # tls:
+  # - hosts:
+  #     # List of hosts using this certificate
+  #     - api.lbs-dev.local
+  #   # For ALB, specify ACM certificate ARN in annotations:
+  #   # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:region:account:certificate/id
+
+# =============================================================================
+# TRAFFIC FLOW WITH AWS ALB INGRESS
+# =============================================================================
+# 
+# 1. Client sends request: http://api.lbs-dev.local/users
+# 
+# 2. DNS resolves: api.lbs-dev.local → AWS ALB DNS name
+# 
+# 3. Request reaches AWS Application Load Balancer
+# 
+# 4. ALB checks routing rules:
+#    - host: api.lbs-dev.local ✓ (match)
+#    - path: / ✓ (match /users with Prefix)
+# 
+# 5. ALB forwards request to target group:
+#    → Target Group (contains pod IPs)
+# 
+# 6. Target Group routes to specific pod:
+#    → lbs-app pod:3000
+# 
+# 7. Pod processes request and returns response
+# 
+# 8. Response flows back:
+#    Pod → ALB → Client
+# 
+# =============================================================================
+# SETUP AWS ALB INGRESS CONTROLLER
+# =============================================================================
+# 
+# 1. Install AWS Load Balancer Controller:
+#    
+#    a. Create IAM OIDC provider for your EKS cluster:
+#       eksctl utils associate-iam-oidc-provider \
+#         --region us-east-1 \
+#         --cluster your-cluster-name \
+#         --approve
+#    
+#    b. Download IAM policy:
+#       curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.6.2/docs/install/iam_policy.json
+#    
+#    c. Create IAM policy:
+#       aws iam create-policy \
+#         --policy-name AWSLoadBalancerControllerIAMPolicy \
+#         --policy-document file://iam_policy.json
+#    
+#    d. Create IAM service account:
+#       eksctl create iamserviceaccount \
+#         --cluster=your-cluster-name \
+#         --namespace=kube-system \
+#         --name=aws-load-balancer-controller \
+#         --attach-policy-arn=arn:aws:iam::ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy \
+#         --approve
+#    
+#    e. Install AWS Load Balancer Controller using Helm:
+#       helm repo add eks https://aws.github.io/eks-charts
+#       helm repo update
+#       helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+#         -n kube-system \
+#         --set clusterName=your-cluster-name \
+#         --set serviceAccount.create=false \
+#         --set serviceAccount.name=aws-load-balancer-controller
+# 
+# 2. Verify installation:
+#    kubectl get deployment -n kube-system aws-load-balancer-controller
+#    kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+# 
+# 3. Get ALB DNS name (after deploying Ingress):
+#    kubectl get ingress lbs-ingress -n lbs-dev
+#    
+#    Output example:
+#    NAME          CLASS   HOSTS                 ADDRESS                                   PORTS   AGE
+#    lbs-ingress   alb     api.lbs-dev.local     k8s-lbsdev-lbsingre-xxxxxxxxxx.us-east-1.elb.amazonaws.com   80      5m
+# 
+# 4. Configure DNS:
+#    Create a CNAME record in your DNS provider:
+#    api.lbs-dev.local → k8s-lbsdev-lbsingre-xxxxxxxxxx.us-east-1.elb.amazonaws.com
+# 
+# =============================================================================
+# TESTING AWS ALB INGRESS
+# =============================================================================
+# 
+# 1. Get ALB DNS name:
+#    ALB_DNS=$(kubectl get ingress lbs-ingress -n lbs-dev -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+#    echo $ALB_DNS
+# 
+# 2. Test with curl using ALB DNS directly:
+#    curl http://$ALB_DNS/health
+#    curl http://$ALB_DNS/api/users
+# 
+# 3. Test with host header:
+#    curl -H "Host: api.lbs-dev.local" http://$ALB_DNS/health
+# 
+# 4. Test with browser (after DNS configuration):
+#    http://api.lbs-dev.local
+# 
+# 5. Check ALB in AWS Console:
+#    - Go to EC2 → Load Balancers
+#    - Find ALB with tags: kubernetes.io/ingress-name=lbs-ingress
+#    - Check target groups, listeners, and health checks
+# 
+# =============================================================================
+# AWS ALB FEATURES & PRODUCTION CONSIDERATIONS
+# =============================================================================
+# 
+# 1. SSL/TLS with AWS Certificate Manager (ACM):
+#    # Create certificate in ACM for your domain
+#    # Add annotation to use it:
+#    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:region:account:certificate/id
+#    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+#    alb.ingress.kubernetes.io/ssl-redirect: "443"
+# 
+# 2. AWS WAF (Web Application Firewall):
+#    # Create WAF ACL in AWS Console
+#    # Add annotation:
+#    alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:region:account:global/webacl/name/id
+# 
+# 3. AWS Shield (DDoS Protection):
+#    alb.ingress.kubernetes.io/shield-advanced-protection: "true"
+# 
+# 4. Authentication with Cognito or OIDC:
+#    alb.ingress.kubernetes.io/auth-type: cognito
+#    alb.ingress.kubernetes.io/auth-idp-cognito: '{"userPoolArn":"arn:aws:cognito-idp:region:account:userpool/id","userPoolClientId":"client-id","userPoolDomain":"domain"}'
+# 
+# 5. Custom response headers:
+#    alb.ingress.kubernetes.io/actions.response-headers: '{"Type":"fixed-response","FixedResponseConfig":{"StatusCode":"200","ContentType":"text/plain","MessageBody":"OK"}}'
+# 
+# 6. Sticky sessions (session affinity):
+#    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=86400
+# 
+# 7. Access logs to S3:
+#    alb.ingress.kubernetes.io/load-balancer-attributes: access_logs.s3.enabled=true,access_logs.s3.bucket=my-bucket,access_logs.s3.prefix=my-app
+# 
+# 8. IP-based routing:
+#    alb.ingress.kubernetes.io/conditions.my-rule: '[{"field":"source-ip","sourceIpConfig":{"values":["10.0.0.0/8"]}}]'
+# 
+# =============================================================================
+# COST OPTIMIZATION
+# =============================================================================
+# 
+# 1. ALB Pricing:
+#    - $0.0225 per ALB-hour (or partial hour)
+#    - $0.008 per LCU-hour (Load Balancer Capacity Unit)
+#    - Data transfer charges
+# 
+# 2. Use internal ALB for internal services:
+#    alb.ingress.kubernetes.io/scheme: internal
+# 
+# 3. Share ALB across multiple Ingresses:
+#    alb.ingress.kubernetes.io/group.name: my-group
+#    
+#    All Ingresses with same group.name will share the same ALB
+# 
+# 4. Monitor costs:
+#    - AWS Cost Explorer
+#    - Tags for cost allocation
+# 
+# =============================================================================

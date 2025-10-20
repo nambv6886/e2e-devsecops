@@ -1,0 +1,38 @@
+# =============================================================================
+# SERVICE - Load balancer và service discovery cho pods
+# =============================================================================
+# Service expose một nhóm pods thông qua một IP address ổn định
+# Pods có thể die và recreate với IP mới, nhưng Service IP không đổi
+
+apiVersion: v1
+kind: Service
+metadata:
+  # Tên service
+  name: lbs-service
+  namespace: lbs-dev
+  labels:
+    app: location-based-service
+spec:
+  # type: Loại service
+  # ClusterIP: Chỉ expose trong cluster (default)
+  # NodePort: Expose trên port của mỗi node
+  # LoadBalancer: Tạo external load balancer (AWS ELB, GCP LB, etc.)
+  type: ClusterIP
+  
+  # selector: Chọn pods nào service này sẽ route traffic đến
+  # Pods có labels match selector này sẽ nhận traffic
+  selector:
+    app: location-based-service
+    component: backend
+  
+  # ports: Danh sách ports mà service expose
+  ports:
+    # port: Port mà service listen (external port trong cluster)
+    - port: 80
+      # targetPort: Port của container (port mà pods listen)
+      # Traffic đến service port 80 sẽ được forward đến pod port 3000
+      targetPort: 3000
+      # protocol: TCP hoặc UDP
+      protocol: TCP
+      # name: Tên của port mapping
+      name: http

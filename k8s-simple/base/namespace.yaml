@@ -1,0 +1,18 @@
+# =============================================================================
+# NAMESPACE - Không gian tên trong Kubernetes
+# =============================================================================
+# Namespace giống như một "folder" để tổ chức và phân tách resources
+# Mỗi namespace có thể có policies, quotas và access control riêng
+
+apiVersion: v1
+# Kind: Loại resource - ở đây là Namespace
+kind: Namespace
+metadata:
+  # Tên namespace - tất cả resources của app sẽ nằm trong namespace này
+  name: lbs-dev
+  # Labels: key-value pairs để organize và filter resources
+  labels:
+    # Label cho biết đây là môi trường dev
+    environment: development
+    # Label cho biết app name
+    app: location-based-service

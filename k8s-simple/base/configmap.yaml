@@ -1,0 +1,86 @@
+# =============================================================================
+# CONFIGMAP - Lưu trữ cấu hình không nhạy cảm
+# =============================================================================
+# ConfigMap lưu configuration dưới dạng key-value
+# Dữ liệu này KHÔNG được mã hóa, chỉ dùng cho thông tin không nhạy cảm
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # Tên của ConfigMap
+  name: app-config
+  # Namespace nơi ConfigMap này thuộc về
+  namespace: lbs-dev
+  labels:
+    app: location-based-service
+data:
+  # =============================================================================
+  # DATABASE CONFIGURATION (AWS RDS)
+  # =============================================================================
+  
+  # DB_TYPE: Loại database (mysql, postgres, etc.)
+  DB_TYPE: "mysql"
+  
+  # DB_HOST: Endpoint của AWS RDS instance
+  # TODO: Thay đổi thành RDS endpoint thực tế của bạn
+  # Format: your-instance.xxxxxxxxx.region.rds.amazonaws.com
+  DB_HOST: "dev-lbs-mysql.xxxxxxxxx.us-east-1.rds.amazonaws.com"
+  
+  # DB_PORT: Port của MySQL (default là 3306)
+  DB_PORT: "3306"
+  
+  # DB_NAME: Tên database trên RDS
+  DB_NAME: "nestjs_dev"
+  
+  # =============================================================================
+  # REDIS CONFIGURATION (AWS ElastiCache)
+  # =============================================================================
+  
+  # REDIS_URL: URL kết nối đến ElastiCache Redis
+  # TODO: Thay đổi thành ElastiCache endpoint thực tế của bạn
+  # Format: redis://your-cluster.xxxxxx.cache.amazonaws.com:6379
+  REDIS_URL: "redis://dev-lbs-redis.xxxxxx.cache.amazonaws.com:6379"
+  
+  # =============================================================================
+  # JWT CONFIGURATION
+  # =============================================================================
+  
+  # JWT_ACCESS_TOKEN_EXPIRES_TIME: Thời gian hết hạn của access token
+  JWT_ACCESS_TOKEN_EXPIRES_TIME: "15m"
+  
+  # JWT_REFRESH_TOKEN_EXPIRES_TIME: Thời gian hết hạn của refresh token
+  JWT_REFRESH_TOKEN_EXPIRES_TIME: "7d"
+  
+  # =============================================================================
+  # PASSWORD RESET CONFIGURATION
+  # =============================================================================
+  
+  # FORGOT_PASSWORD_WAIT_TIME_IN_SECONDS: Thời gian chờ giữa các lần request
+  FORGOT_PASSWORD_WAIT_TIME_IN_SECONDS: "60"
+  
+  # PASSWORD_RESET_TOKEN_LIFE_TIME_IN_SECONDS: Thời gian sống của reset token
+  PASSWORD_RESET_TOKEN_LIFE_TIME_IN_SECONDS: "3600"
+  
+  # =============================================================================
+  # EMAIL CONFIGURATION
+  # =============================================================================
+  
+  # EMAIL_SMTP_PORT: Port của SMTP server (587 cho TLS)
+  EMAIL_SMTP_PORT: "587"
+  
+  # EMAIL_RESET_PASSWORD_SUBJECT: Subject của email reset password
+  EMAIL_RESET_PASSWORD_SUBJECT: "Password Reset Request"
+  
+  # =============================================================================
+  # APPLICATION CONFIGURATION
+  # =============================================================================
+  
+  # NODE_ENV: Môi trường runtime (development, production)
+  NODE_ENV: "development"
+  
+  # PORT: Port mà ứng dụng sẽ lắng nghe
+  PORT: "3000"
+  
+  # RUN_SEEDER: Có chạy seeder khi start app không (true/false)
+  # Development: true để có data test
+  RUN_SEEDER: "true"

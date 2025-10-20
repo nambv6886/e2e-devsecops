@@ -1,0 +1,324 @@
+# =============================================================================
+# DEPLOYMENT - Quản lý việc deploy và scale application
+# =============================================================================
+# Deployment đảm bảo số lượng pods mong muốn luôn chạy
+# Tự động recreate pods nếu bị lỗi hoặc node die
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Tên của deployment
+  name: lbs-app
+  # Namespace chứa deployment này
+  namespace: lbs-dev
+  labels:
+    app: location-based-service
+    component: backend
+spec:
+  # replicas: Số lượng pods muốn chạy
+  # Dev environment: 1 replica là đủ để tiết kiệm tài nguyên
+  replicas: 1
+  
+  # selector: Xác định pods nào thuộc về deployment này
+  selector:
+    # matchLabels: Pods có labels này sẽ được quản lý bởi deployment
+    matchLabels:
+      app: location-based-service
+      component: backend
+  
+  # template: Định nghĩa cách tạo pods
+  template:
+    metadata:
+      # labels: Gán labels cho pods (phải match với selector ở trên)
+      labels:
+        app: location-based-service
+        component: backend
+    
+    spec:
+      # =============================================================================
+      # INIT CONTAINERS - Chạy trước main container
+      # =============================================================================
+      # Init containers chạy tuần tự, phải thành công trước khi main container start
+      # Dùng để check dependencies (RDS, Redis) đã sẵn sàng chưa
+
+      initContainers:
+      # Init container 1: Kiểm tra RDS MySQL connectivity
+      - name: wait-for-rds
+        # Image: busybox là image nhỏ gọn có các tools cơ bản (nc, sh, etc.)
+        image: busybox:1.35
+        # command: Chạy shell script
+        command: ['sh', '-c']
+        # args: Script để check RDS connectivity
+        args:
+          - |
+            # Script giải thích:
+            # until: Lặp cho đến khi command thành công
+            # nc -z: netcat check connectivity (không gửi data)
+            # $(DB_HOST): Lấy giá trị từ environment variable DB_HOST
+            # $(DB_PORT): Lấy giá trị từ environment variable DB_PORT
+            # do...done: Vòng lặp shell
+            
+            echo "Checking RDS MySQL connectivity..."
+            until nc -z $(DB_HOST) $(DB_PORT); do
+              echo "Waiting for RDS MySQL at $(DB_HOST):$(DB_PORT)..."
+              sleep 5
+            done
+            echo "RDS MySQL is ready!"
+        # env: Environment variables cho init container
+        env:
+          # Inject DB_HOST từ ConfigMap
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: DB_HOST
+          # Inject DB_PORT từ ConfigMap
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: DB_PORT
+      
+      # Init container 2: Kiểm tra ElastiCache Redis connectivity
+      - name: wait-for-redis
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+          - |
+            # Script để extract host và port từ REDIS_URL
+            # REDIS_URL format: redis://hostname:port
+            
+            echo "Checking ElastiCache Redis connectivity..."
+            # sed 's/redis:\/\///': Remove prefix "redis://"
+            # cut -d: -f1: Lấy phần trước dấu : (hostname)
+            REDIS_HOST=$(echo $REDIS_URL | sed 's/redis:\/\///' | cut -d: -f1)
+            # cut -d: -f2: Lấy phần sau dấu : (port)
+            REDIS_PORT=$(echo $REDIS_URL | sed 's/redis:\/\///' | cut -d: -f2)
+            
+            until nc -z $REDIS_HOST $REDIS_PORT; do
+              echo "Waiting for ElastiCache Redis at $REDIS_HOST:$REDIS_PORT..."
+              sleep 5
+            done
+            echo "ElastiCache Redis is ready!"
+        env:
+          - name: REDIS_URL
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: REDIS_URL
+      
+      # =============================================================================
+      # MAIN CONTAINER - Application container
+      # =============================================================================
+      containers:
+      - name: app
+        # image: Docker image của ứng dụng NestJS
+        # TODO: Thay đổi bằng image thực tế của bạn
+        image: your-registry/location-based-service:dev-latest
+        
+        # imagePullPolicy: Khi nào pull image
+        # IfNotPresent: Chỉ pull nếu chưa có local
+        # Always: Luôn pull image mới nhất
+        imagePullPolicy: IfNotPresent
+        
+        # ports: Expose ports từ container
+        ports:
+          # containerPort: Port mà app listen trong container
+          - containerPort: 3000
+            # name: Tên port (dùng để reference trong service)
+            name: http
+            # protocol: TCP hoặc UDP
+            protocol: TCP
+        
+        # =============================================================================
+        # ENVIRONMENT VARIABLES
+        # =============================================================================
+        # env: Danh sách environment variables cho container
+        env:
+          # --- Database Configuration ---
+          - name: DB_TYPE
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: DB_TYPE
+          
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: DB_HOST
+          
+          - name: DB_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: DB_PORT
+          
+          - name: DB_NAME
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: DB_NAME
+          
+          # DB_USERNAME và DB_PASSWORD từ Secret (nhạy cảm)
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: DB_USERNAME
+          
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: DB_PASSWORD
+          
+          # --- Redis Configuration ---
+          - name: REDIS_URL
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: REDIS_URL
+          
+          # --- JWT Configuration ---
+          - name: JWT_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: JWT_SECRET_KEY
+          
+          - name: JWT_ACCESS_TOKEN_EXPIRES_TIME
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: JWT_ACCESS_TOKEN_EXPIRES_TIME
+          
+          - name: JWT_REFRESH_TOKEN_EXPIRES_TIME
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: JWT_REFRESH_TOKEN_EXPIRES_TIME
+          
+          # --- Password Reset Configuration ---
+          - name: FORGOT_PASSWORD_WAIT_TIME_IN_SECONDS
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: FORGOT_PASSWORD_WAIT_TIME_IN_SECONDS
+          
+          - name: PASSWORD_RESET_TOKEN_LIFE_TIME_IN_SECONDS
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: PASSWORD_RESET_TOKEN_LIFE_TIME_IN_SECONDS
+          
+          # --- Email Configuration ---
+          - name: EMAIL_SMTP_HOST
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: EMAIL_SMTP_HOST
+          
+          - name: EMAIL_SMTP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: EMAIL_SMTP_PORT
+          
+          - name: EMAIL_USER_NAME
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: EMAIL_USER_NAME
+          
+          - name: EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: EMAIL_PASSWORD
+          
+          - name: EMAIL_RESET_PASSWORD_SUBJECT
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: EMAIL_RESET_PASSWORD_SUBJECT
+          
+          # --- Application Configuration ---
+          - name: BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: BASE_URL
+          
+          - name: NODE_ENV
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: NODE_ENV
+          
+          - name: PORT
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: PORT
+          
+          - name: RUN_SEEDER
+            valueFrom:
+              configMapKeyRef:
+                name: app-config
+                key: RUN_SEEDER
+        
+        # =============================================================================
+        # RESOURCE LIMITS - Giới hạn tài nguyên
+        # =============================================================================
+        resources:
+          # requests: Tài nguyên tối thiểu cần thiết
+          # Kubernetes sẽ schedule pod lên node có đủ resources này
+          requests:
+            # memory: RAM tối thiểu (256 MB)
+            memory: "256Mi"
+            # cpu: CPU tối thiểu (0.1 cores = 100 millicores)
+            cpu: "100m"
+          
+          # limits: Tài nguyên tối đa có thể sử dụng
+          # Pod sẽ bị kill nếu vượt quá memory limit
+          limits:
+            # memory: RAM tối đa (512 MB)
+            memory: "512Mi"
+            # cpu: CPU tối đa (0.5 cores)
+            cpu: "500m"
+        
+        # =============================================================================
+        # HEALTH CHECKS - Kiểm tra sức khỏe của container
+        # =============================================================================
+        
+        # livenessProbe: Kiểm tra container có còn sống không
+        # Nếu fail, Kubernetes sẽ restart container
+        livenessProbe:
+          # httpGet: Gửi HTTP GET request để check
+          httpGet:
+            # path: Endpoint để check (app cần có endpoint này)
+            path: /health
+            # port: Port để check
+            port: 3000
+          # initialDelaySeconds: Chờ bao lâu sau khi container start mới bắt đầu check
+          initialDelaySeconds: 30
+          # periodSeconds: Check mỗi bao nhiêu giây
+          periodSeconds: 10
+          # timeoutSeconds: Timeout cho mỗi lần check
+          timeoutSeconds: 5
+          # failureThreshold: Fail bao nhiêu lần liên tiếp thì restart
+          failureThreshold: 3
+        
+        # readinessProbe: Kiểm tra container có sẵn sàng nhận traffic không
+        # Nếu fail, pod sẽ bị remove khỏi Service endpoints
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          # initialDelaySeconds: Ngắn hơn liveness vì chỉ check readiness
+          initialDelaySeconds: 10
+          # periodSeconds: Check thường xuyên hơn
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
