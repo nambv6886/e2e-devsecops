@@ -1,0 +1,56 @@
+version: "3"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-lds
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - nestjs-network
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+  redis:
+    container_name: redis-lds
+    image: redis/redis-stack-server:latest
+    networks:
+      - nestjs-network
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - redis-data:/data
+    environment:
+      # REDIS_ARGS sets additional command-line arguments for the Redis server.
+      # --save 60 1: Save the DB to disk if at least 1 key changes within 60 seconds.
+      # --loglevel warning: Set the log level to 'warning' to reduce log verbosity.
+      - REDIS_ARGS=--save 60 1 --loglevel warning
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-lds
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=devpass123
+      - MYSQL_DATABASE=nestjs_dev
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - nestjs-network
+    restart: unless-stopped
+volumes:
+  redis-data:
+    driver: local
+  mysql_data:
+    driver: local
+
+networks:
+  nestjs-network:
+    driver: bridge

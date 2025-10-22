@@ -1,0 +1,39 @@
+export class MessageCode {
+  public static readonly AUTHORIZATION_FORBIDDEN_RESOURCE =
+    'AUTHORIZATION_FORBIDDEN_RESOURCE';
+  public static readonly EMAIL_IS_REQUIRED = 'EMAIL_IS_REQUIRED';
+  public static readonly ROLE_IS_REQUIRED = 'ROLE_IS_REQUIRED';
+  public static readonly EMAIL_IS_INVALID = 'EMAIL_IS_INVALID';
+  public static readonly PASSWORD_IS_REQUIRED = 'PASSWORD_IS_REQUIRED';
+  public static readonly PASSWORD_IS_INVALID_MIN_LENGTH =
+    'PASSWORD_IS_INVALID_MIN_LENGTH';
+  public static readonly EMAIL_IS_EXISTED = 'EMAIL_IS_EXISTED';
+  public static readonly SUCCESS = 'SUCCESS';
+  public static readonly FAIL = 'FAIL';
+  public static readonly NOT_FOUND = 'NOT_FOUND';
+  public static readonly GET_LIST_PAGE_INDEX_NOT_NUMBER =
+    'PAGE_INDEX_NOT_NUMBER';
+  public static readonly GET_LIST_PAGE_SIZE_NOT_NUMBER = 'PAGE_SIZE_NOT_NUMBER';
+  public static readonly GET_LIST_PAGE_INDEX_REQUIRED = 'PAGE_INDEX_REQUIRED';
+  public static readonly GET_LIST_PAGE_SIZE_REQUIRED = 'PAGE_SIZE_REQUIRED';
+  public static readonly ACCOUNT_ID_REQUIRED = 'ACCOUNT_ID_REQUIRED';
+  public static readonly ACCOUNT_ID_INVALID = 'ACCOUNT_ID_INVALID';
+  public static readonly ACCOUNT_FORGOT_PASSWORD_NEED_TO_WAIT =
+    'ACCOUNT_FORGOT_PASSWORD_NEED_TO_WAIT';
+  public static readonly ACCOUNT_TOKEN_REQUIRED = 'ACCOUNT_TOKEN_REQUIRED';
+  public static readonly ACCOUNT_PASSWORD_REQUIRED =
+    'ACCOUNT_PASSWORD_REQUIRED';
+  public static readonly REGISTER_INVALID_PASSWORD_LENGTH =
+    'REGISTER_INVALID_PASSWORD_LENGTH';
+  public static readonly DECRYPT_CODE_ERROR_MESSAGE =
+    'DECRYPT_CODE_ERROR_MESSAGE';
+  public static readonly ACCOUNT_CODE_EXPIRED_LINK_MESSAGE =
+    'ACCOUNT_CODE_EXPIRED_LINK_MESSAGE';
+  public static readonly ACCOUNT_RESET_PASSWORD_INVALID_RESET_TOKEN_MESSAGE =
+    'ACCOUNT_RESET_PASSWORD_INVALID_RESET_TOKEN_MESSAGE';
+  public static readonly ACCOUNT_RESET_PASSWORD_INVALID_NEW_PASSWORD_MESSAGE =
+    'ACCOUNT_RESET_PASSWORD_INVALID_NEW_PASSWORD_MESSAGE';
+  public static readonly INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR';
+  public static readonly USER_NOT_FOUND = 'USER_NOT_FOUND';
+  public static readonly INVALID_PASSWORD = 'INVALID_PASSWORD';
+}
